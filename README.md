@@ -2,7 +2,7 @@
 
 # NMEA Static GPS Server
 
-A Home Assistant app that broadcasts a fixed location as NMEA 0183 data on the local network.
+A Home Assistant app that reads the location configured in Home Assistant through its API and broadcasts it as NMEA 0183 data on the local network.
 
 This project packages and integrates [evert/nmea-static-gps-server](https://github.com/evert/nmea-static-gps-server) for Home Assistant. It is intended for stationary Home Assistant installations whose network clients need a reliable local GPS position.
 
