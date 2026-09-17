@@ -2,11 +2,11 @@
 
 # NMEA Static GPS Server
 
-A Home Assistant app that reads the home location configured in Home Assistant and broadcasts it as NMEA 0183 data on the local network.
+A Home Assistant app that broadcasts your configured home location over the local network using the NMEA 0183 protocol.
 
-The NMEA protocol is used by `geoclue` (used on Linux) to read and set the location when the machine is connected to the local network that broadcasts this protocol. See [this blog post](https://evertpot.com/broadcasting-gps-on-local-network/) for more information.
+Linux machines running `geoclue` can use this broadcast to determine their location when connected to your network. This lets them use the location you have already set in Home Assistant, without configuring it separately on each machine.
 
-This allows you to auto-configure the location of all Linux machines on the laptop, and also re-use the settings set in Home Assistant.
+For more background on how this works, see [Evert Pot's blog post on broadcasting GPS data over a local network](https://evertpot.com/broadcasting-gps-on-local-network/).
 
 ## Acknowledgements
 
