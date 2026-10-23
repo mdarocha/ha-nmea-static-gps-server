@@ -87,6 +87,7 @@ jobs:
     if: inputs.publish
     runs-on: ubuntu-latest
     permissions:
+      attestations: write
       id-token: write
       packages: write
     steps:
@@ -101,3 +102,17 @@ jobs:
             latest
           registry-prefix: ${{ needs.prepare.outputs.registry_prefix }}
           skip-existing: ${{ inputs.version }}
+
+      - name: Get manifest digest
+        id: digest
+        env:
+          IMAGE: ${{ needs.prepare.outputs.registry_prefix }}/${{ needs.prepare.outputs.image_name }}
+        run: |
+          digest=$(docker buildx imagetools inspect "${IMAGE}:${{ inputs.version }}" --format '{{json .Manifest}}' | jq -r .digest)
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4.2.2
+        with:
+          subject-name: ${{ needs.prepare.outputs.registry_prefix }}/${{ needs.prepare.outputs.image_name }}
+          subject-digest: ${{ steps.digest.outputs.digest }}

@@ -1,17 +1,14 @@
 name: Release
 
+# scripts/release.sh pushes a tag on a "Prepare release" commit that is not on main yet.
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: Version to release, like 1.2.0. CHANGELOG.md needs a matching entry.
-        required: true
-        type: string
+  push:
+    tags:
+      - "*"
 
 env:
   APP_DIR: nmea_static_gps_server
-  CHANGELOG: nmea_static_gps_server/CHANGELOG.md
-  VERSION: ${{ inputs.version }}
+  VERSION: ${{ github.ref_name }}
 
 concurrency: release
 
@@ -26,24 +23,25 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
-      - name: Check version
+      - name: Check release commit
         run: |
-          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
-            echo "::error::Releases must be run from main"
-            exit 1
-          fi
           if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Version must look like 1.2.0"
+            echo "::error::Tag must look like 1.2.0"
             exit 1
           fi
-          if ! grep -qxF "## ${VERSION}" "${CHANGELOG}"; then
-            echo "::error::${CHANGELOG} has no '## ${VERSION}' entry"
+          if ! grep -qxF "version: \"${VERSION}\"" "${APP_DIR}/config.yaml"; then
+            echo "::error::${APP_DIR}/config.yaml is not at version ${VERSION}"
             exit 1
           fi
-          if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" > /dev/null; then
-            echo "::error::Tag ${VERSION} already exists"
+          if ! grep -qxF "## ${VERSION}" "${APP_DIR}/CHANGELOG.md"; then
+            echo "::error::${APP_DIR}/CHANGELOG.md has no '## ${VERSION}' entry"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            echo "::error::The tagged commit does not fast-forward main"
             exit 1
           fi
 
@@ -52,40 +50,34 @@ jobs:
     needs: validate
     uses: ./.github/workflows/build.yaml
     permissions:
+      attestations: write
       contents: read
       id-token: write
       packages: write
     with:
-      version: ${{ inputs.version }}
+      version: ${{ github.ref_name }}
       publish: true
 
   release:
-    name: Bump version and tag
+    name: Publish release
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
+      # Only after the images are pushed: the Supervisor offers the update as soon as main has the new version.
+      - name: Fast-forward main to the release
+        run: gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/heads/main" -f sha="${GITHUB_SHA}" -F force=false
+
       - name: Check out the repository
         uses: actions/checkout@v7.0.1
-
-      # Only after the push: the Supervisor offers the update as soon as it sees the version.
-      - name: Bump app version
-        run: |
-          sed -i -E "s/^version: .*/version: \"${VERSION}\"/" "${APP_DIR}/config.yaml"
-
-      - name: Commit and tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git diff --quiet || git commit -m "Release ${VERSION}" "${APP_DIR}/config.yaml"
-          git tag -a "${VERSION}" -m "${VERSION}"
-          git push --atomic origin HEAD:main "refs/tags/${VERSION}"
+        with:
+          persist-credentials: false
 
       - name: Create GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           awk -v heading="## ${VERSION}" '$0 == heading { found = 1; next } found && /^## / { exit } found' \
-            "${CHANGELOG}" > release-notes.md
+            "${APP_DIR}/CHANGELOG.md" > release-notes.md
           gh release create "${VERSION}" --title "${VERSION}" --notes-file release-notes.md --verify-tag

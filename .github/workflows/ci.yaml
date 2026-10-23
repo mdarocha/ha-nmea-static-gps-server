@@ -28,6 +28,7 @@ jobs:
     name: Build
     uses: ./.github/workflows/build.yaml
     permissions:
+      attestations: write
       contents: read
       id-token: write
       packages: write
