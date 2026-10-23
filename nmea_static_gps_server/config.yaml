@@ -1,0 +1,11 @@
+name: NMEA Static GPS Server
+version: "1.0.0"
+slug: nmea_static_gps_server
+description: Broadcast the Home Assistant home location on the local network over NMEA 0183
+url: https://github.com/mdarocha/ha-nmea-static-gps-server/tree/main/nmea_static_gps_server
+arch:
+  - aarch64
+  - amd64
+host_network: true
+homeassistant_api: true
+image: ghcr.io/mdarocha/nmea-static-gps-server

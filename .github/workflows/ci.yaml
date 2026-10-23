@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lint app
+        uses: frenck/action-addon-linter@v2.21.1
+        with:
+          path: ./nmea_static_gps_server
+
+  build:
+    name: Build
+    uses: ./.github/workflows/build.yaml
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    with:
+      version: dev
+      publish: false

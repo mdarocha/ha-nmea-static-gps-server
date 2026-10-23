@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, like 1.2.0. CHANGELOG.md needs a matching entry.
+        required: true
+        type: string
+
+env:
+  APP_DIR: nmea_static_gps_server
+  VERSION: ${{ inputs.version }}
+
+concurrency: release
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check version
+        run: |
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "::error::Releases must be run from main"
+            exit 1
+          fi
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must look like 1.2.0"
+            exit 1
+          fi
+          if ! grep -qxF "## ${VERSION}" "${APP_DIR}/CHANGELOG.md"; then
+            echo "::error::${APP_DIR}/CHANGELOG.md has no '## ${VERSION}' entry"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" > /dev/null; then
+            echo "::error::Tag ${VERSION} already exists"
+            exit 1
+          fi
+
+  build:
+    name: Build
+    needs: validate
+    uses: ./.github/workflows/build.yaml
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    with:
+      version: ${{ inputs.version }}
+      publish: true
+
+  release:
+    name: Bump version and tag
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+
+      # Only after the push: the Supervisor offers the update as soon as it sees the version.
+      - name: Bump app version
+        run: |
+          sed -i -E "s/^version: .*/version: \"${VERSION}\"/" "${APP_DIR}/config.yaml"
+
+      - name: Commit and tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git diff --quiet || git commit -m "Release ${VERSION}" "${APP_DIR}/config.yaml"
+          git tag -a "${VERSION}" -m "${VERSION}"
+          git push --atomic origin HEAD:main "refs/tags/${VERSION}"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          awk -v heading="## ${VERSION}" '$0 == heading { found = 1; next } found && /^## / { exit } found' \
+            "${APP_DIR}/CHANGELOG.md" > release-notes.md
+          gh release create "${VERSION}" --title "${VERSION}" --notes-file release-notes.md --verify-tag
