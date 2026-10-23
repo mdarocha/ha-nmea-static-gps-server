@@ -1,5 +1,5 @@
 #!/usr/bin/env nix
-#! nix shell nixpkgs#bash nixpkgs#coreutils nixpkgs#gawk nixpkgs#gh nixpkgs#git nixpkgs#gnugrep nixpkgs#gnused --command bash
+#! nix shell nixpkgs#bash nixpkgs#coreutils nixpkgs#gawk nixpkgs#gh nixpkgs#git nixpkgs#gnugrep nixpkgs#gnused nixpkgs#gum --command bash
 # Release the app: write the changelog entry, push it, then run and follow the Release workflow.
 set -euo pipefail
 
@@ -22,17 +22,11 @@ current=$(sed -nE 's/^version: "?([0-9]+\.[0-9]+\.[0-9]+)"?$/\1/p' "${APP_DIR}/c
 [[ -n "${current}" ]] || die "no version found in ${APP_DIR}/config.yaml"
 IFS=. read -r major minor bugfix <<< "${current}"
 
-echo "Current version: ${current}"
-PS3="Bump: "
-select bump in major minor bugfix; do
-  case "${bump}" in
-    major) version="$((major + 1)).0.0" ;;
-    minor) version="${major}.$((minor + 1)).0" ;;
-    bugfix) version="${major}.${minor}.$((bugfix + 1))" ;;
-    *) continue ;;
-  esac
-  break
-done
+choice=$(gum choose --header "Current version: ${current}. Bump:" \
+  "bugfix  ${major}.${minor}.$((bugfix + 1))" \
+  "minor   ${major}.$((minor + 1)).0" \
+  "major   $((major + 1)).0.0") || die "aborted"
+version=${choice##* }
 
 if git rev-parse --quiet --verify "refs/tags/${version}" > /dev/null; then
   die "tag ${version} already exists"
@@ -63,19 +57,18 @@ ENTRY="## ${version}"$'\n\n'"${notes}" awk '
 mv "${CHANGELOG}.new" "${CHANGELOG}"
 
 git --no-pager diff "${CHANGELOG}"
-read -rp "Release ${version}? [y/N] " confirm
-if [[ "${confirm}" != [yY] ]]; then
+if ! gum confirm "Release ${version}?" --default=false; then
   git checkout -- "${CHANGELOG}"
   die "aborted"
 fi
 
 git commit --quiet -m "Add ${version} changelog" "${CHANGELOG}"
-git push --quiet origin main
+gum spin --show-error --title "Pushing changelog" -- git push --quiet origin main
 
 dispatch=$(gh workflow run release.yaml --ref main -f "version=${version}")
 run_url=$(grep -oE 'https://\S+/actions/runs/[0-9]+' <<< "${dispatch}") || die "no run URL in gh output: ${dispatch}"
 echo "Release workflow: ${run_url}"
 gh run watch "${run_url##*/}" --exit-status
 
-git pull --quiet --ff-only --tags origin main
-echo "Released ${version}"
+gum spin --show-error --title "Pulling release commit" -- git pull --quiet --ff-only --tags origin main
+gum style --foreground 2 --bold "Released ${version}"
