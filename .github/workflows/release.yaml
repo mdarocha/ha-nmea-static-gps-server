@@ -10,7 +10,7 @@ on:
 
 env:
   APP_DIR: nmea_static_gps_server
-  CHANGELOG: docs/CHANGELOG.md
+  CHANGELOG: nmea_static_gps_server/CHANGELOG.md
   VERSION: ${{ inputs.version }}
 
 concurrency: release

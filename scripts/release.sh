@@ -4,7 +4,7 @@
 set -euo pipefail
 
 APP_DIR=nmea_static_gps_server
-CHANGELOG=docs/CHANGELOG.md
+CHANGELOG="${APP_DIR}/CHANGELOG.md"
 
 die() {
   echo "error: $*" >&2

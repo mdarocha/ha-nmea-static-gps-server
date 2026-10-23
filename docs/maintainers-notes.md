@@ -12,4 +12,4 @@ If a release run fails, fix the cause and re-run the **Release** workflow from `
 
 ## Testing on a device
 
-To test changes before releasing, copy `nmea_static_gps_server` to the `local_apps` folder with `cp -rL` (its `README.md`, `DOCS.md` and `CHANGELOG.md` are symlinks into `docs/`) and remove the `image` line from its `config.yaml`, so the Supervisor builds it locally.
+To test changes before releasing, copy `nmea_static_gps_server` to the `local_apps` folder and remove the `image` line from its `config.yaml`, so the Supervisor builds it locally.

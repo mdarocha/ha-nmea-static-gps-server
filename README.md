@@ -12,7 +12,7 @@ For more background on how this works, see [Evert Pot's blog post on broadcastin
 
 [![Open your Home Assistant instance and show the add app repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fmdarocha%2Fha-nmea-static-gps-server)
 
-Or add `https://github.com/mdarocha/ha-nmea-static-gps-server` under **Settings** > **Apps** > **Install app** > **Repositories**, then install **NMEA Static GPS Server**. Client setup is in the [app documentation](docs/usage.md).
+Or add `https://github.com/mdarocha/ha-nmea-static-gps-server` under **Settings** > **Apps** > **Install app** > **Repositories**, then install **NMEA Static GPS Server**. Client setup is in the [app documentation](nmea_static_gps_server/DOCS.md).
 
 ## Acknowledgements
 
