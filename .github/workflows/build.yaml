@@ -17,6 +17,20 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    name: Lint app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lint app
+        uses: frenck/action-addon-linter@v2.21.1
+        with:
+          path: ./${{ env.APP_DIR }}
+
   prepare:
     name: Prepare
     runs-on: ubuntu-latest
@@ -83,7 +97,7 @@ jobs:
 
   manifest:
     name: Publish multi-arch manifest
-    needs: [prepare, build]
+    needs: [prepare, lint, build]
     if: inputs.publish
     runs-on: ubuntu-latest
     permissions:

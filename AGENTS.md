@@ -9,7 +9,7 @@ Home Assistant app repository with one app, `nmea_static_gps_server/`. The app r
 - `nmea_static_gps_server/nmea_server.py`: the whole app. Python stdlib plus `zeroconf` from Alpine's `py3-zeroconf`.
 - `nmea_static_gps_server/{README,DOCS,CHANGELOG}.md`: shown by Home Assistant on the store page, the Documentation tab and in update dialogs. They must be regular files in the app folder.
 - `docs/maintainers-notes.md`: release and testing notes for humans.
-- `.github/workflows/`: `ci.yaml` (lint + test build), `build.yaml` (reusable multi-arch build with provenance attestation), `release.yaml` (runs on tag push).
+- `.github/workflows/`: `build.yaml` (reusable lint, multi-arch build and provenance attestation), `ci.yaml` (runs it without publishing on PRs and `main`), `release.yaml` (runs it with publishing on tag push). Keep the check names stable: rulesets require `Build / Lint app`, `Build / Build amd64 image` and `Build / Build aarch64 image`.
 - `scripts/release.sh`: prepares, tags and pushes a release.
 
 ## Design constraints
