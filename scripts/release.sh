@@ -65,16 +65,6 @@ fi
 git commit --quiet -m "Add ${version} changelog" "${CHANGELOG}"
 gum spin --show-error --title "Pushing changelog" -- git push --quiet origin main
 
-dispatch=$(gh workflow run release.yaml --ref main -f "version=${version}" 2>&1)
-run_url=$(grep -oE 'https://\S+/actions/runs/[0-9]+' <<< "${dispatch}") || die "no run URL in gh output: ${dispatch}"
-echo "Release workflow: ${run_url}"
-gh run watch "${run_url##*/}" --exit-status
-
-gum spin --show-error --title "Pulling release commit" -- git pull --quiet --ff-only origin main
-grep -qxF "version: \"${version}\"" "${APP_DIR}/config.yaml" || die "the workflow did not bump ${APP_DIR}/config.yaml to ${version}"
-
-git tag -a "${version}" -m "${version}"
-gum spin --show-error --title "Pushing tag" -- git push --quiet origin "refs/tags/${version}"
-awk -v heading="## ${version}" '$0 == heading { found = 1; next } found && /^## / { exit } found' "${CHANGELOG}" |
-  gh release create "${version}" --title "${version}" --notes-file - --verify-tag
-gum style --foreground 2 --bold "Released ${version}"
+gum spin --show-error --title "Starting the Release workflow" -- gh workflow run release.yaml --ref main -f "version=${version}"
+gum style --foreground 2 --bold "Release ${version} started; the workflow builds, tags and publishes it."
+echo "Follow it with: gh run watch"
