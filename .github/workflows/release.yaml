@@ -10,6 +10,7 @@ on:
 
 env:
   APP_DIR: nmea_static_gps_server
+  CHANGELOG: docs/CHANGELOG.md
   VERSION: ${{ inputs.version }}
 
 concurrency: release
@@ -37,8 +38,8 @@ jobs:
             echo "::error::Version must look like 1.2.0"
             exit 1
           fi
-          if ! grep -qxF "## ${VERSION}" "${APP_DIR}/CHANGELOG.md"; then
-            echo "::error::${APP_DIR}/CHANGELOG.md has no '## ${VERSION}' entry"
+          if ! grep -qxF "## ${VERSION}" "${CHANGELOG}"; then
+            echo "::error::${CHANGELOG} has no '## ${VERSION}' entry"
             exit 1
           fi
           if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" > /dev/null; then
@@ -86,5 +87,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           awk -v heading="## ${VERSION}" '$0 == heading { found = 1; next } found && /^## / { exit } found' \
-            "${APP_DIR}/CHANGELOG.md" > release-notes.md
+            "${CHANGELOG}" > release-notes.md
           gh release create "${VERSION}" --title "${VERSION}" --notes-file release-notes.md --verify-tag
