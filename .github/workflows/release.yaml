@@ -60,7 +60,7 @@ jobs:
       publish: true
 
   release:
-    name: Bump version and tag
+    name: Bump version
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -74,18 +74,10 @@ jobs:
         run: |
           sed -i -E "s/^version: .*/version: \"${VERSION}\"/" "${APP_DIR}/config.yaml"
 
-      - name: Commit and tag
+      # Tags can only be created by an admin, so scripts/release.sh tags and publishes the release afterwards.
+      - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git diff --quiet || git commit -m "Release ${VERSION}" "${APP_DIR}/config.yaml"
-          git tag -a "${VERSION}" -m "${VERSION}"
-          git push --atomic origin HEAD:main "refs/tags/${VERSION}"
-
-      - name: Create GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          awk -v heading="## ${VERSION}" '$0 == heading { found = 1; next } found && /^## / { exit } found' \
-            "${CHANGELOG}" > release-notes.md
-          gh release create "${VERSION}" --title "${VERSION}" --notes-file release-notes.md --verify-tag
+          git push origin HEAD:main
