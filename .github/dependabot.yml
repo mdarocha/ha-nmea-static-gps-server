@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: docker
+    directory: /nmea_static_gps_server
+    schedule:
+      interval: weekly
+      day: friday
+      time: "21:00"
+      timezone: Etc/UTC
+    labels:
+      - automated
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: friday
+      time: "21:00"
+      timezone: Etc/UTC
+    labels:
+      - automated
